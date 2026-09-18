@@ -18,25 +18,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import universite.montpellier.planning.ump.ui.theme.UMPTheme
 import androidx.compose.foundation.lazy.items
-
+import androidx.compose.material3.Button
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import universite.montpellier.planning.ump.UmpUtils.Companion.filtreCours
+import java.time.LocalDateTime
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val events = ReadIcalFile.getDatas(this)
-        val courss = ArrayList<Cours>()
-        for (event in events) {
-            val cours =
-                Cours(
-                    nom = event.summary.value,
-                    dateDebut = event.dateStart.value.toString(),
-                    dateFin = event.dateEnd.value.toString(),
-                    salle = event.location.value.toString(),
-                )
-            courss.add(cours)
-        }
+        val coursData = ReadIcalFile.getDatas(this)
 
         enableEdgeToEdge()
         setContent {
@@ -44,7 +38,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
                         modifier = Modifier.padding(innerPadding),
-                        courss = courss,
+                        coursData = coursData,
                     )
                 }
             }
@@ -53,7 +47,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(courss: List<Cours>, modifier: Modifier = Modifier) {
+fun Greeting(coursData: List<Cours>, modifier: Modifier = Modifier) {
+
+    var currentDay by remember { mutableStateOf(LocalDateTime.now()) }
+    val currentCours = remember(currentDay) { filtreCours(coursData, currentDay) }
+
     Column(
         modifier = Modifier
             .padding(
@@ -68,13 +66,30 @@ fun Greeting(courss: List<Cours>, modifier: Modifier = Modifier) {
                 text = "Planning"
             )
         }
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            BoutonJour(onPresser = { currentDay = currentDay.minusDays(1) }, "Précédent")
+            Text(text = currentDay.dayOfMonth.toString() + " " + currentDay.monthValue)
+            BoutonJour(onPresser = { currentDay = currentDay.plusDays(1) }, "Suivant")
+        }
         Row {
             ListeCours(
-                courss = courss
+                courss = currentCours
             )
         }
     }
 }
+
+@Composable
+fun BoutonJour(onPresser: () -> Unit, jour: String) {
+    Button(onClick = onPresser) {
+        Text("Jour" + jour)
+    }
+}
+
+
 
 @Composable
 fun ListeCours(courss: List<Cours>) {
@@ -82,7 +97,7 @@ fun ListeCours(courss: List<Cours>) {
         items(courss) { cours ->
             Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(cours.nom, style = MaterialTheme.typography.titleMedium)
-                Text("${cours.dateDebut} → ${cours.dateFin}")
+                Text("${cours.dateDebut.toString()} → ${cours.dateFin.toString()}")
                 Text(cours.salle)
             }
         }
