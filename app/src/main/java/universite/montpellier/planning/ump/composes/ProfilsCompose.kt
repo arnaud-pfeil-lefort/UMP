@@ -164,7 +164,7 @@ fun FormulaireProfil(
 @Composable
 private fun AideLien() {
     Text(
-        "Dans ADE, utilise l'export de l'agenda pour générer un lien iCal (.ics), puis colle-le ici.",
+        "Sur l'ENT : ouvre Planning depuis l'accueil, clique sur iCal, puis copie le lien proposé et colle-le ici.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
