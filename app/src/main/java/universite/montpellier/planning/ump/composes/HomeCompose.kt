@@ -81,6 +81,7 @@ fun PlanningScreen(
     etat: PlanningEtat,
     onRafraichir: () -> Unit,
     onIgnorerErreur: () -> Unit,
+    onOuvrirProfils: () -> Unit,
 ) {
     val aujourdhui = remember { LocalDate.now() }
     val pagerState = rememberPagerState(initialPage = PAGE_AUJOURDHUI) { NB_PAGES }
@@ -108,11 +109,11 @@ fun PlanningScreen(
     ) { padding ->
         Column(Modifier.padding(bottom = padding.calculateBottomPadding()).fillMaxSize()) {
             EnTete(
+                etat = etat,
                 jour = jourAffiche,
                 aujourdhui = aujourdhui,
-                coursParJour = etat.coursParJour,
-                rafraichissement = etat.rafraichissement,
                 onChoisirJour = ::allerA,
+                onOuvrirProfils = onOuvrirProfils,
             )
 
             if (etat.chargementInitial) {
@@ -147,27 +148,37 @@ fun PlanningScreen(
 
 @Composable
 private fun EnTete(
+    etat: PlanningEtat,
     jour: LocalDate,
     aujourdhui: LocalDate,
-    coursParJour: Map<LocalDate, List<Cours>>,
-    rafraichissement: Boolean,
     onChoisirJour: (LocalDate) -> Unit,
+    onOuvrirProfils: () -> Unit,
 ) {
+    val coursParJour = etat.coursParJour
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 2.dp) {
         Column(Modifier.statusBarsPadding()) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 12.dp, top = 12.dp),
+                    .padding(start = 20.dp, end = 12.dp, top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH).format(jour).majuscule(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                BadgeProfil(etat, onOuvrirProfils)
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH).format(jour).majuscule(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
                     Text(
                         DateTimeFormatter.ofPattern("EEEE d", Locale.FRENCH).format(jour).majuscule(),
                         style = MaterialTheme.typography.headlineMedium,
@@ -182,7 +193,7 @@ private fun EnTete(
             BandeauSemaine(jour, aujourdhui, coursParJour, onChoisirJour)
 
             Box(Modifier.fillMaxWidth().height(3.dp)) {
-                if (rafraichissement) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (etat.rafraichissement) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
         }
     }

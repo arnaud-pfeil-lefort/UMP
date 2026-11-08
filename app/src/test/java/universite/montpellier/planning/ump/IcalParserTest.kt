@@ -5,7 +5,6 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import universite.montpellier.planning.ump.data.IcalParser
-import java.io.File
 
 class IcalParserTest {
 
@@ -28,8 +27,8 @@ class IcalParserTest {
 
     @Test
     fun fichierEmbarque_parseEtCouleursDistinctesParMatiere() {
-        val fichier = File("src/main/res/raw/adecal.ics")
-        val cours = IcalParser.parse(fichier.readText())
+        val contenu = javaClass.getResource("/adecal.ics")!!.readText()
+        val cours = IcalParser.parse(contenu)
         assert(cours.isNotEmpty())
 
         val web = cours.first { it.code == "HAI305I" }
