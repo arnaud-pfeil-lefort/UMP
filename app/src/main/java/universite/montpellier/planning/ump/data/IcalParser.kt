@@ -12,6 +12,10 @@ object IcalParser {
     private val REGEX_CODE = Regex("""^[A-Z]{2,}\d[A-Z0-9]*$""")
     private val REGEX_GROUPE = Regex("""\bGr\b|^(TD|TP|CM)\b|^(L\d|M\d|DU|Double)""")
     private val ESPACES = Regex("""\s+""")
+    /** ADE remplace l'apostrophe typographique par « ? » (ex. « d?information »). */
+    private val APOSTROPHE_PERDUE = Regex("""(?<=\p{L})\?(?=\p{L})""")
+
+    private fun reparer(texte: String) = texte.replace(APOSTROPHE_PERDUE, "’")
 
     private class Brut(
         val code: String?, val nom: String, val precision: String,
@@ -29,7 +33,7 @@ object IcalParser {
         val bruts = ical.events.mapNotNull { event ->
             val debut = event.dateStart?.value ?: return@mapNotNull null
             val fin = event.dateEnd?.value ?: debut
-            val titre = event.summary?.value?.trim().orEmpty()
+            val titre = reparer(event.summary?.value?.trim().orEmpty())
             val desc = analyserDescription(event.description?.value.orEmpty())
 
             val code = titre.substringBefore(' ').takeIf { REGEX_CODE.matches(it) }
@@ -52,8 +56,6 @@ object IcalParser {
             )
         }
 
-        // Chaque matière distincte (triée) reçoit un index de couleur différent : les couleurs sont
-        // donc toutes distinctes tant qu'il y a moins de matières que de couleurs dans la palette.
         val indexCouleur = bruts.map { it.cle }.distinct().sorted()
             .withIndex().associate { (i, cle) -> cle to i }
 
@@ -73,20 +75,9 @@ object IcalParser {
     }
 
     data class Description(val matiere: String?, val enseignants: List<String>, val groupes: List<String>)
-
-    /**
-     * La description ADE ressemble à :
-     * ```
-     * L2 Informatique - Gr B
-     * Programmation web
-     * MEGHAZI   IMRAN
-     * A valider
-     * (Exported :26/09/2026 16:05)
-     * ```
-     */
     fun analyserDescription(description: String): Description {
         val lignes = description.lines()
-            .map { it.trim().replace(ESPACES, " ") }
+            .map { reparer(it.trim().replace(ESPACES, " ")) }
             .filter { it.isNotEmpty() && !it.startsWith("(Exported") && !it.equals("A valider", ignoreCase = true) }
 
         val groupes = lignes.filter { REGEX_GROUPE.containsMatchIn(it) }

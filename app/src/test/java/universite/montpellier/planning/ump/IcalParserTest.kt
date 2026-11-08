@@ -19,6 +19,12 @@ class IcalParserTest {
     }
 
     @Test
+    fun apostropheRemplaceeParAde_estReparee() {
+        val d = IcalParser.analyserDescription("L2 Informatique - Gr B\nSystèmes d?information et Bases de données\nDUPONT JEAN")
+        assertEquals("Systèmes d’information et Bases de données", d.matiere)
+    }
+
+    @Test
     fun descriptionVide() {
         val d = IcalParser.analyserDescription("")
         assertNull(d.matiere)

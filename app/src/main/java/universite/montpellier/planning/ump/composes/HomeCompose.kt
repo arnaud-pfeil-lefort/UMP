@@ -1,10 +1,6 @@
 package universite.montpellier.planning.ump.composes
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -16,26 +12,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,7 +46,6 @@ import kotlinx.coroutines.launch
 import universite.montpellier.planning.ump.Cours
 import universite.montpellier.planning.ump.PlanningEtat
 import universite.montpellier.planning.ump.ui.theme.LigneMaintenant
-import universite.montpellier.planning.ump.ui.theme.couleurMatiere
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -65,8 +53,8 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import kotlin.math.abs
 
 private const val NB_PAGES = 4001
 private const val PAGE_AUJOURDHUI = NB_PAGES / 2
@@ -91,8 +79,13 @@ fun PlanningScreen(
 
     fun dateDePage(page: Int): LocalDate = aujourdhui.plusDays((page - PAGE_AUJOURDHUI).toLong())
     fun allerA(date: LocalDate) {
-        val page = PAGE_AUJOURDHUI + ChronoUnit.DAYS.between(aujourdhui, date).toInt()
-        scope.launch { pagerState.animateScrollToPage(page.coerceIn(0, NB_PAGES - 1)) }
+        val page = (PAGE_AUJOURDHUI + ChronoUnit.DAYS.between(aujourdhui, date).toInt()).coerceIn(0, NB_PAGES - 1)
+        scope.launch {
+            // Jour voisin : petite animation. Plus loin : saut direct, sans faire défiler
+            // (et donc sélectionner) tous les jours intermédiaires.
+            if (abs(page - pagerState.currentPage) <= 1) pagerState.animateScrollToPage(page)
+            else pagerState.scrollToPage(page)
+        }
     }
 
     val jourAffiche = dateDePage(pagerState.currentPage)
@@ -140,169 +133,6 @@ fun PlanningScreen(
     }
 
     coursSelectionne?.let { DetailsCours(it, onFermer = { coursSelectionne = null }) }
-}
-
-/* ------------------------------------------------------------------------------------------ */
-/*  En-tête : date, bouton « Aujourd'hui » et bandeau de la semaine                            */
-/* ------------------------------------------------------------------------------------------ */
-
-@Composable
-private fun EnTete(
-    etat: PlanningEtat,
-    jour: LocalDate,
-    aujourdhui: LocalDate,
-    onChoisirJour: (LocalDate) -> Unit,
-    onOuvrirProfils: () -> Unit,
-) {
-    val coursParJour = etat.coursParJour
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shadowElevation = 2.dp) {
-        Column(Modifier.statusBarsPadding()) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 12.dp, top = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH).format(jour).majuscule(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f),
-                )
-                BadgeProfil(etat, onOuvrirProfils)
-            }
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        DateTimeFormatter.ofPattern("EEEE d", Locale.FRENCH).format(jour).majuscule(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                AnimatedVisibility(visible = jour != aujourdhui) {
-                    FilledTonalButton(onClick = { onChoisirJour(aujourdhui) }) { Text("Aujourd'hui") }
-                }
-            }
-
-            BandeauSemaine(jour, aujourdhui, coursParJour, onChoisirJour)
-
-            Box(Modifier.fillMaxWidth().height(3.dp)) {
-                if (etat.rafraichissement) LinearProgressIndicator(Modifier.fillMaxWidth())
-            }
-        }
-    }
-}
-
-@Composable
-private fun BandeauSemaine(
-    jour: LocalDate,
-    aujourdhui: LocalDate,
-    coursParJour: Map<LocalDate, List<Cours>>,
-    onChoisirJour: (LocalDate) -> Unit,
-) {
-    val lundi = jour.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BoutonFleche("‹") { onChoisirJour(jour.minusWeeks(1)) }
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.SpaceBetween) {
-            for (i in 0L until 7L) {
-                val date = lundi.plusDays(i)
-                CelluleJour(
-                    date = date,
-                    selectionne = date == jour,
-                    estAujourdhui = date == aujourdhui,
-                    cours = coursParJour[date].orEmpty(),
-                    onClick = { onChoisirJour(date) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-        BoutonFleche("›") { onChoisirJour(jour.plusWeeks(1)) }
-    }
-}
-
-@Composable
-private fun BoutonFleche(symbole: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .size(36.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(symbole, fontSize = 26.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun CelluleJour(
-    date: LocalDate,
-    selectionne: Boolean,
-    estAujourdhui: Boolean,
-    cours: List<Cours>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val couleurs = MaterialTheme.colorScheme
-    Column(
-        modifier
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            DateTimeFormatter.ofPattern("EEE", Locale.FRENCH).format(date).take(3).majuscule(),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selectionne) couleurs.primary else couleurs.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(4.dp))
-        Box(
-            Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(if (selectionne) couleurs.primary else Color.Transparent)
-                .then(
-                    if (estAujourdhui && !selectionne) Modifier.border(1.5.dp, couleurs.primary, CircleShape)
-                    else Modifier
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (selectionne || estAujourdhui) FontWeight.Bold else FontWeight.Medium,
-                color = when {
-                    selectionne -> couleurs.onPrimary
-                    estAujourdhui -> couleurs.primary
-                    else -> couleurs.onSurface
-                },
-            )
-        }
-        Spacer(Modifier.height(5.dp))
-        // Une pastille par matière du jour (3 max), dans la couleur de la matière.
-        Row(Modifier.height(5.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            cours.map { it.couleur }.distinct().take(3).forEach { c ->
-                Box(
-                    Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(couleurMatiere(c))
-                )
-            }
-        }
-    }
 }
 
 /* ------------------------------------------------------------------------------------------ */
