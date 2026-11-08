@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Signature de l app (secrets)
+keystore.properties
+*.jks
+*.keystore

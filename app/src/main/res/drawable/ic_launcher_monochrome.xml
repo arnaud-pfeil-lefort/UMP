@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Version une couleur du logo, utilisée par les icônes à thème d'Android 13+ :
+     la feuille pleine, avec les créneaux découpés en creux. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M38,34H70A7,7 0 0 1 77,41V71A7,7 0 0 1 70,78H38A7,7 0 0 1 31,71V41A7,7 0 0 1 38,34Z
+            M40,50H62A3,3 0 0 1 65,53A3,3 0 0 1 62,56H40A3,3 0 0 1 37,53A3,3 0 0 1 40,50Z
+            M40,59H68A3,3 0 0 1 71,62A3,3 0 0 1 68,65H40A3,3 0 0 1 37,62A3,3 0 0 1 40,59Z
+            M40,68H54A3,3 0 0 1 57,71A3,3 0 0 1 54,74H40A3,3 0 0 1 37,71A3,3 0 0 1 40,68Z
+            M31,45H77V46.5H31Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M42,29A2,2 0 0 1 44,31V38A2,2 0 0 1 40,38V31A2,2 0 0 1 42,29Z
+            M66,29A2,2 0 0 1 68,31V38A2,2 0 0 1 64,38V31A2,2 0 0 1 66,29Z" />
+</vector>

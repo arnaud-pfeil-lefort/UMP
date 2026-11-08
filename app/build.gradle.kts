@@ -1,3 +1,11 @@
+import java.util.Properties
+
+// Clé de signature de la version « release » : lue depuis keystore.properties (non versionné).
+val keystoreProps = Properties().apply {
+    val fichier = rootProject.file("keystore.properties")
+    if (fichier.exists()) fichier.inputStream().use { load(it) }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -19,11 +27,28 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
             }
+            signingConfig = signingConfigs.findByName("release")
+        }
+        debug {
+            // La version de développement s'installe à côté de la version « release »
+            // sans la remplacer (nom affiché : « Planning UM (dev) »).
+            applicationIdSuffix = ".debug"
         }
     }
     compileOptions {
